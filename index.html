@@ -871,19 +871,23 @@
             document.getElementById('restore-banner-box').classList.add('hidden');
         };
 
-        // 一鍵帶入示範資料（超便利測試功能）
+        // 一鍵帶入示範資料（依使用者指定先發陣容）
         document.getElementById('btn-fill-demo').addEventListener('click', () => {
-            document.getElementById('match-location').value = "新豐體育館";
-            document.getElementById('match-opponent').value = "熱血排球隊";
-            document.getElementById('match-round').value = "預賽第一場";
+            // 比賽地點、對手名稱、賽事場次 不自動帶入資料
 
-            document.getElementById('setup-p4').value = "林大砲";
-            document.getElementById('setup-p3').value = "張快攻";
-            document.getElementById('setup-p2').value = "陳舉球";
-            document.getElementById('setup-p5').value = "王主攻";
-            document.getElementById('setup-p6').value = "黃副攻";
-            document.getElementById('setup-p1').value = "李快攻";
-            document.getElementById('setup-pL').value = "劉自由";
+            // 自動將舉球起始位切換為 1 號位 (1號位為舉球員)
+            let radioPos1 = document.querySelector('input[name="setter-start"][value="pos1"]');
+            if (radioPos1) {
+                radioPos1.checked = true;
+                previewRoles();
+            }
+
+            document.getElementById('setup-p4').value = "隆興"; // 4號位 副攻手
+            document.getElementById('setup-p3').value = "銘祥"; // 3號位 快攻手
+            document.getElementById('setup-p2').value = "阿修"; // 2號位 大砲手
+            document.getElementById('setup-p5').value = "Dblue"; // 5號位 大砲手
+            document.getElementById('setup-p6').value = "小正"; // 6號位 快攻手
+            document.getElementById('setup-p1').value = "崔屁"; // 1號位 舉球員
 
             // 清除錯誤提示
             document.querySelectorAll('.form-group').forEach(el => el.classList.remove('field-error'));
