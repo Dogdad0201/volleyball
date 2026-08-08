@@ -894,6 +894,8 @@
         });
 
         const setterRadios = document.querySelectorAll('input[name="setter-start"]');
+        let currentSetterStartPos = 'pos1';
+
         function previewRoles() {
             let selected = document.querySelector('input[name="setter-start"]:checked').value;
             if (selected === 'pos1') {
@@ -912,7 +914,40 @@
                 document.getElementById('role-label-pos1').innerText = "快攻手";
             }
         }
-        setterRadios.forEach(r => r.addEventListener('change', previewRoles));
+
+        setterRadios.forEach(r => r.addEventListener('change', (e) => {
+            let newPos = e.target.value;
+            if (newPos !== currentSetterStartPos) {
+                // 取得當前 1~6 號位輸入框內容
+                let p1 = document.getElementById('setup-p1').value;
+                let p2 = document.getElementById('setup-p2').value;
+                let p3 = document.getElementById('setup-p3').value;
+                let p4 = document.getElementById('setup-p4').value;
+                let p5 = document.getElementById('setup-p5').value;
+                let p6 = document.getElementById('setup-p6').value;
+
+                // 若有填寫姓名，讓球員姓名隨角色移位
+                if (p1 || p2 || p3 || p4 || p5 || p6) {
+                    if (currentSetterStartPos === 'pos1' && newPos === 'pos2') {
+                        document.getElementById('setup-p2').value = p1; // 舉球員 -> 2號位
+                        document.getElementById('setup-p3').value = p2; // 大砲手 -> 3號位
+                        document.getElementById('setup-p4').value = p3; // 快攻手 -> 4號位
+                        document.getElementById('setup-p5').value = p4; // 副攻手 -> 5號位
+                        document.getElementById('setup-p6').value = p5; // 大砲手 -> 6號位
+                        document.getElementById('setup-p1').value = p6; // 快攻手 -> 1號位
+                    } else if (currentSetterStartPos === 'pos2' && newPos === 'pos1') {
+                        document.getElementById('setup-p1').value = p2; // 舉球員 -> 1號位
+                        document.getElementById('setup-p2').value = p3; // 大砲手 -> 2號位
+                        document.getElementById('setup-p3').value = p4; // 快攻手 -> 3號位
+                        document.getElementById('setup-p4').value = p5; // 副攻手 -> 4號位
+                        document.getElementById('setup-p5').value = p6; // 大砲手 -> 5號位
+                        document.getElementById('setup-p6').value = p1; // 快攻手 -> 6號位
+                    }
+                }
+                currentSetterStartPos = newPos;
+            }
+            previewRoles();
+        }));
         previewRoles();
 
         document.getElementById('btn-start-game').addEventListener('click', () => {
