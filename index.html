@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>排球手動對角紀錄表 v2.4.1 (全平台適配版)</title>
+    
+    <!-- PWA & Mobile Web App Capabilities -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="排球紀錄表">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --strength: #059669;
+            --strength-light: #d1fae5;
+            --weakness: #dc2626;
+            --weakness-light: #fee2e2;
+            --advice: #64748b;
+            --bg: #f8fafc;
+            
+            --court-border: #334155;
+            --court-bg: #475569;
+            --front-row-bg: #f1f5f9;
+            --back-row-bg: #e2e8f0;
+            
+            --light-gray-border: #cbd5e1;
+            --light-gray-bg: #ffffff;
+            --light-gray-cell: #f8fafc;
+            --light-gray-cell-hover: #e2e8f0;
+            
+            --btn-dark-blue: #334155;
+            --btn-light-gray: #f1f5f9;
+
+            --accent-orange: #ea580c;
+            --accent-blue: #2563eb;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin: 0; 
+            padding: 10px; 
+            background-color: var(--bg); 
+            color: var(--primary); 
+            touch-action: manipulation;
+        }
+
+        .container { 
+            max-width: 1500px; 
+            margin: 0 auto; 
+        }
+        
+        header { 
+            display: flex; 
+            flex-wrap: wrap;
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 12px; 
+            background: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            gap: 10px;
+        }
+
+        .match-info-banner {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary-light);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .match-info-banner span {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* 恢復舊局提醒 Toast */
+        .restore-banner {
+            background: #eff6ff;
+            border: 1.5px solid #93c5fd;
+            color: #1e40af;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13.5px;
+            font-weight: 700;
+        }
+
+        /* ================= 頁面一：賽前設定 ================= */
+        .setup-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .setup-card h2 { 
+            font-size: 17px; 
+            margin-top: 0; 
+            margin-bottom: 14px; 
+            font-weight: 900; 
+            border-left: 5px solid var(--accent-orange); 
+            padding-left: 10px; 
+        }
+        .info-header-block {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+        .info-setup-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+        .form-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 4px; 
+            background: white; 
+            padding: 10px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            transition: border-color 0.2s;
+        }
+        .form-group.field-error {
+            border-color: #ef4444 !important;
+            background: #fef2f2 !important;
+        }
+        .form-group label { 
+            font-weight: 700; 
+            font-size: 12px; 
+            color: var(--advice); 
+        }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="time"] { 
+            padding: 8px 6px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            width: 100%; 
+            text-align: center; 
+            font-weight: bold; 
+        }
+
+        .setup-court-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .court-grid-6 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: #f1f5f9;
+            border: 3px solid var(--advice);
+            border-radius: 12px;
+            padding: 14px;
+            width: 100%;
+            max-width: 750px;
+        }
+
+        .setter-radio-label {
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 4px;
+            margin-top: 4px; 
+            font-size: 12px; 
+            color: var(--accent-blue); 
+            font-weight: bold; 
+            cursor: pointer;
+        }
+
+        .setup-action-row {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn { 
+            padding: 10px 18px; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 8px; 
+            font-weight: 700;
+            border: none;
+            transition: all 0.15s ease-in-out;
+            touch-action: manipulation;
+            user-select: none;
+            min-height: 42px;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-custom-style {
+            background-color: var(--btn-dark-blue) !important;
+            color: white !important;
+        }
+        .btn-demo-fill {
+            background-color: #0284c7;
+            color: white;
+        }
+        .btn-start-main {
+            background-color: #16a34a;
+            color: white;
+            flex-grow: 1;
+            font-size: 16px;
+        }
+
+        /* ================= 頁面二：操作紀錄畫面 ================= */
+        .operating-layout-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .court-top-bar {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            align-items: center;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            gap: 12px;
+        }
+        .rotation-title-box h2 { margin: 0; font-size: 20px; color: #1e3a8a; font-weight: 900; }
+        .rotation-title-box p { margin: 3px 0 0 0; font-size: 11px; color: var(--advice); font-weight: 500; }
+
+        .scoreboard-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .score-team-label { font-size: 13px; font-weight: 900; color: var(--primary); }
+        .score-ctrl-box { display: flex; align-items: center; gap: 6px; }
+        .score-val-display { font-size: 26px; font-weight: 900; color: #1e3a8a; min-width: 36px; text-align: center; }
+        .btn-score-adjust { 
+            width: 34px; 
+            height: 34px; 
+            border-radius: 8px; 
+            border: none; 
+            font-size: 16px; 
+            font-weight: 900; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .btn-score-up { background: #2563eb; color: white; }
+        .btn-score-down { background: #cbd5e1; color: #475569; }
+
+        .mini-court-map { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+        .mini-grid {
+            display: grid; grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(2, 24px);
+            gap: 3px; background: #64748b; border: 2px solid #475569; padding: 3px; border-radius: 4px;
+        }
+        .mini-cell {
+            background: white; border: 1px solid #cbd5e1; font-size: 9px; font-weight: 900;
+            display: flex; justify-content: center; align-items: center; overflow: hidden; white-space: nowrap; border-radius: 2px;
+        }
+        .btn-mini-rotate { padding: 6px 10px; font-size: 12px; gap: 4px; border-radius: 6px; }
+
+        /* 移動端分頁切換按鈕 (Mobile Tab Bar) */
+        .mobile-tab-nav {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 4px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+        .mobile-tab-btn {
+            padding: 10px 4px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--advice);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .mobile-tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .record-and-court-flex { display: grid; grid-template-columns: 1.48fr 0.52fr; gap: 12px; }
+
+        /* 左側大球場 */
+        .main-operating-court {
+            display: grid; grid-template-rows: repeat(2, 1fr); grid-template-columns: repeat(3, 1fr);
+            gap: 8px; background: var(--court-border); border: 4px solid #334155; border-radius: 14px;
+            padding: 10px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* 先發卡片 */
+        .court-cell-box {
+            background: white; border-radius: 10px; padding: 8px; display: flex; flex-direction: column;
+            position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.03); border: 2px solid transparent;
+            height: 100%; min-height: 190px;
+        }
+        .front-row-box { background: var(--front-row-bg); border-color: #cbd5e1; }
+        .back-row-box { background: var(--back-row-bg); border-color: #94a3b8; }
+        
+        /* 自由球員專屬橘底卡片 */
+        .libero-active-style { background: #fff7ed !important; border-color: #ffedd5 !important; }
+
+        .cell-header-info {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1.5px solid rgba(15, 23, 42, 0.08); padding-bottom: 4px; margin-bottom: 6px; padding-right: 28px;
+        }
+        .cell-pos-title { font-size: 11px; font-weight: 900; color: #475569; background: rgba(71, 85, 105, 0.08); padding: 1px 5px; border-radius: 4px; }
+        .cell-player-name { font-size: 16px; font-weight: 900; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+        
+        /* 角色小標籤 */
+        .cell-player-role { font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; }
+        .role-badge-oh { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
+        .role-badge-mb { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .role-badge-setter { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .role-badge-opp { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+        .role-badge-libero { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+
+        .btn-diagonal-swap {
+            position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+            background: var(--primary); color: white; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 12px;
+            transition: all 0.15s; box-shadow: 0 2px 4px rgba(15, 23, 42, 0.2); z-index: 10;
+            touch-action: manipulation;
+        }
+        .btn-diagonal-swap:active { transform: scale(0.9); }
+
+        .metric-action-row { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            flex-grow: 1; 
+            gap: 4px; 
+        }
+        
+        .libero-row-gap-style {
+            justify-content: center !important;
+            gap: 10px !important;
+        }
+        
+        .metric-block { 
+            display: grid; 
+            grid-template-columns: 40px 1fr; 
+            align-items: center; 
+            background: white; 
+            padding: 3px 5px; 
+            border-radius: 6px; 
+            border: 1px solid rgba(15, 23, 42, 0.05); 
+            width: 100% !important; 
+            min-height: 32px;
+        }
+        
+        .metric-title { font-size: 11px; font-weight: 900; color: var(--primary-light); text-align: left; }
+        
+        .counter-unit-row { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            align-items: center; 
+            justify-items: center;
+            width: 100%; 
+        }
+        
+        .counter-val-inline { font-size: 12px; font-weight: 900; min-width: 12px; text-align: center; }
+        .counter-sub-label { font-size: 10px; color: var(--advice); font-weight: 700; min-width: 12px; text-align: center; }
+        
+        .ctrl-btn-group-inline { display: flex; align-items: center; justify-content: center; gap: 2px; width: 100%; }
+        .btn-mini-inline { 
+            padding: 3px 6px; 
+            font-size: 11px; 
+            font-weight: 900; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            touch-action: manipulation;
+            user-select: none;
+            min-width: 24px;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-mini-inline:active { transform: scale(0.92); }
+        
+        .btn-plus { background-color: var(--strength-light); color: var(--strength); }
+        .btn-plus-err { background-color: var(--weakness-light); color: var(--weakness); }
+        .btn-plus-total { background-color: #e2e8f0; color: #475569; }
+        .btn-minus { background-color: #f1f5f9; color: #94a3b8; }
+
+        .grid-placeholder-cell { grid-column: span 1; visibility: hidden; }
+
+        /* 落點紀錄表外框 */
+        .court-fall-zone-card {
+            background: var(--light-gray-bg); 
+            padding: 12px 8px; 
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03); 
+            border: 2px solid var(--light-gray-border);
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            height: 100%; 
+        }
+        .court-fall-zone-card h3 { margin-top: 0; margin-bottom: 2px; font-size: 14px; font-weight: 900; text-align: center; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+        .court-fall-zone-card p { margin: 0 0 8px 0; font-size: 11px; color: var(--advice); text-align: center; font-weight: 500; }
+
+        .fall-grid-3x3 {
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            gap: 6px; background: #cbd5e1; border: 3px solid #94a3b8; padding: 6px; border-radius: 10px;
+            width: 100%; aspect-ratio: 1 / 1.1; 
+            max-width: 280px; 
+        }
+        .fall-cell {
+            background: var(--light-gray-cell); border: 1.5px solid var(--light-gray-border); border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 6px 3px; cursor: default; position: relative; user-select: none;
+        }
+        .fall-cell-num { font-size: 12px; font-weight: 900; color: var(--primary-light); }
+        .fall-cell-count { font-size: 14px; font-weight: 900; color: #ef4444; background: #fee2e2; padding: 1px 7px; border-radius: 10px; margin: 1px 0; }
+        
+        .fall-adjust-row { display: flex; gap: 4px; width: 100%; justify-content: center; }
+        .btn-fall-adj { 
+            border: none; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            font-weight: 900; 
+            padding: 3px 8px; 
+            cursor: pointer; 
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .btn-fall-plus { background: #fee2e2; color: #ef4444; }
+        .btn-fall-minus { background: #e2e8f0; color: #64748b; }
+
+        /* 下方調度區 */
+        .footer-dashboard { max-width: 1500px; margin: 12px auto 0 auto; display: flex; flex-direction: column; align-items: flex-start; }
+        .bench-card { background: white; padding: 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: flex-start; }
+        .bench-card h3 { margin-top: 0; font-size: 14px; font-weight: 900; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 10px; width: 100%; text-align: left; }
+        
+        .sub-panel-box { display: flex; flex-direction: column; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%; }
+        .sub-selects { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-start; width: 100%; }
+        .sub-selects select, .sub-selects input[type="text"] { padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 13px; }
+
+        .hidden { display: none !important; }
+
+        /* ================= 響應式適配 (Mobile & Tablet Breakpoints) ================= */
+        @media (max-width: 900px) {
+            .court-top-bar {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                text-align: center;
+            }
+            .rotation-title-box { text-align: center; }
+            .mini-court-map { justify-content: center; }
+            .record-and-court-flex {
+                grid-template-columns: 1fr;
+            }
+            .bench-card { max-width: 100%; }
+        }
+
+        @media (max-width: 650px) {
+            body { padding: 6px; }
+            header { padding: 10px; flex-direction: column; align-items: stretch; text-align: center; }
+            .match-info-banner { justify-content: center; }
+            .header-actions { justify-content: center; margin-top: 4px; }
+            
+            .court-grid-6 {
+                grid-template-columns: 1fr;
+            }
+            
+            .mobile-tab-nav {
+                display: grid;
+            }
+
+            .main-operating-court {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+                padding: 6px;
+                gap: 6px;
+            }
+            .cell-player-name { max-width: 75px; font-size: 14px; }
+            .cell-header-info { padding-right: 24px; margin-bottom: 4px; }
+            .court-cell-box { min-height: 170px; padding: 6px; }
+            .metric-block { padding: 2px 4px; min-height: 28px; }
+            .btn-mini-inline { padding: 2px 4px; min-width: 22px; min-height: 22px; font-size: 10px; }
+
+            .fall-grid-3x3 { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- 自動復原未完成局 Banner -->
+        <div id="restore-banner-box" class="restore-banner hidden">
+            <span><i class="fa-solid fa-clock-rotate-left"></i> 偵測到上次未完成的比賽紀錄</span>
+            <div>
+                <button class="btn btn-demo-fill" onclick="restoreSavedGame()" style="padding: 4px 10px; font-size: 12px; min-height: 30px;">載入記錄</button>
+                <button class="btn" onclick="clearSavedGame()" style="padding: 4px 10px; font-size: 12px; min-height: 30px; background:#cbd5e1; color:#334155;">放棄新開</button>
+            </div>
+        </div>
+
+        <header>
+            <div class="match-info-banner" id="match-info-banner-id">
+                <span><i class="fa-solid fa-file-contract"></i> 賽前設定中</span>
+            </div>
+            <div id="action-buttons" class="header-actions hidden">
+                <button class="btn" id="btn-export" style="background-color: #0284c7; color: white; padding: 8px 14px; font-size: 13px;"><i class="fa-solid fa-file-excel"></i> 匯出 (CSV)</button>
+                <button class="btn" id="btn-reset-match" style="background-color: #e11d48; color: white; padding: 8px 12px; font-size: 13px;"><i class="fa-solid fa-power-off"></i> 新比賽</button>
+            </div>
+        </header>
+
+        <!-- ================= 頁面一：賽前設定 ================= -->
+        <div class="setup-card" id="setup-section">
+            <div class="info-header-block">
+                <h2><i class="fa-solid fa-circle-info"></i> 1. 輸入比賽基本資訊</h2>
+                <div class="info-setup-row">
+                    <div class="form-group" id="group-date"><label>比賽日期</label><input type="date" id="match-date"></div>
+                    <div class="form-group" id="group-time"><label>比賽時間</label><input type="time" id="match-time"></div>
+                    <div class="form-group" id="group-location"><label>比賽地點</label><input type="text" id="match-location" placeholder="例如：新豐國小"></div>
+                    <div class="form-group" id="group-opponent"><label>對手名稱</label><input type="text" id="match-opponent" placeholder="請輸入對手"></div>
+                    <div class="form-group" id="group-round"><label>賽事場次</label><input type="text" id="match-round" placeholder="例如：預賽第一場"></div>
+                </div>
+            </div>
+
+            <div class="setup-court-container">
+                <h2><i class="fa-solid fa-users"></i> 2. 設定先發球員姓名 (對角位置與角色自動計算)</h2>
+                <div class="court-grid-6">
+                    <div class="form-group" id="group-p4">
+                        <label>4 號位 (左前)：<span id="role-label-pos4" style="color:#e11d48">--</span></label>
+                        <input type="text" id="setup-p4" placeholder="球員姓名">
+                    </div>
+                    <div class="form-group" id="group-p3">
+                        <label>3 號位 (中前)：<span id="role-label-pos3" style="color:#e11d48">--</span></label>
+                        <input type="text" id="setup-p3" placeholder="球員姓名">
+                    </div>
+                    <div class="form-group" id="group-p2">
+                        <label>2 號位 (右前)：<span id="role-label-pos2" style="color:#e11d48">--</span></label>
+                        <input type="text" id="setup-p2" placeholder="球員姓名">
+                        <label class="setter-radio-label"><input type="radio" name="setter-start" value="pos2"> 舉球起始位</label>
+                    </div>
+
+                    <div class="form-group" id="group-p5">
+                        <label>5 號位 (左後)：<span id="role-label-pos5" style="color:#e11d48">--</span></label>
+                        <input type="text" id="setup-p5" placeholder="球員姓名">
+                    </div>
+                    <div class="form-group" id="group-p6">
+                        <label>6 號位 (中後)：<span id="role-label-pos6" style="color:#e11d48">--</span></label>
+                        <input type="text" id="setup-p6" placeholder="球員姓名">
+                    </div>
+                    <div class="form-group" id="group-p1">
+                        <label>1 號位 (右後)：<span id="role-label-pos1" style="color:#e11d48">--</span></label>
+                        <input type="text" id="setup-p1" placeholder="球員姓名">
+                        <label class="setter-radio-label"><input type="radio" name="setter-start" value="pos1" checked> 舉球起始位</label>
+                    </div>
+
+                    <div class="form-group" style="border-color: #ea580c; background: #fff7ed; grid-column: 1 / -1;">
+                        <label style="color: #ea580c; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> 自由球員 (Libero)</label>
+                        <input type="text" id="setup-pL" placeholder="自由球員姓名 (可選)">
+                    </div>
+
+                    <div class="setup-action-row">
+                        <button type="button" class="btn btn-demo-fill" id="btn-fill-demo"><i class="fa-solid fa-wand-magic-sparkles"></i> 快速帶入示範資料</button>
+                        <button type="button" class="btn btn-start-main" id="btn-start-game"><i class="fa-solid fa-play"></i> 生成並開始紀錄</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 頁面二：操作紀錄畫面 ================= -->
+        <div class="operating-layout-wrapper hidden" id="operating-section">
+            
+            <div class="court-top-bar">
+                <div class="rotation-title-box">
+                    <h2>排球數據紀錄表</h2>
+                    <p><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> 點擊卡片右上角 🔄 可隨時進行隊形或對角互換</p>
+                </div>
+
+                <div class="scoreboard-center">
+                    <span class="score-team-label">我方得分</span>
+                    <div class="score-ctrl-box">
+                        <button class="btn-score-adjust btn-score-down" onclick="adjustScore('home', -1)">-</button>
+                        <span class="score-val-display" id="score-home">0</span>
+                        <button class="btn-score-adjust btn-score-up" onclick="adjustScore('home', 1)">+</button>
+                    </div>
+                    <span style="font-weight: 900; color: #64748b; font-size: 20px;">:</span>
+                    <div class="score-ctrl-box">
+                        <button class="btn-score-adjust btn-score-up" onclick="adjustScore('away', 1)">+</button>
+                        <span class="score-val-display" id="score-away">0</span>
+                        <button class="btn-score-adjust btn-score-down" onclick="adjustScore('away', -1)">-</button>
+                    </div>
+                    <span class="score-team-label">對手得分</span>
+                </div>
+
+                <div class="mini-court-map">
+                    <div class="mini-grid">
+                        <div class="mini-cell" id="mini-pos4">--</div>
+                        <div class="mini-cell" id="mini-pos3">--</div>
+                        <div class="mini-cell" id="mini-pos2">--</div>
+                        <div class="mini-cell" id="mini-pos5">--</div>
+                        <div class="mini-cell" id="mini-pos6">--</div>
+                        <div class="mini-cell" id="mini-pos1">--</div>
+                    </div>
+                    <button class="btn btn-custom-style btn-mini-rotate" id="btn-rotate-mini"><i class="fa-solid fa-rotate"></i> 輪轉</button>
+                </div>
+            </div>
+
+            <!-- 手機端專屬分頁切換列 -->
+            <div class="mobile-tab-nav">
+                <button class="mobile-tab-btn active" id="tab-btn-court" onclick="switchMobileTab('court')"><i class="fa-solid fa-volleyball"></i> 陣容紀錄</button>
+                <button class="mobile-tab-btn" id="tab-btn-fall" onclick="switchMobileTab('fall')"><i class="fa-solid fa-bullseye"></i> 落點九宮格</button>
+                <button class="mobile-tab-btn" id="tab-btn-bench" onclick="switchMobileTab('bench')"><i class="fa-solid fa-users-gear"></i> 替補調度</button>
+            </div>
+
+            <div class="record-and-court-flex">
+                
+                <!-- [左側] 大紀錄表 -->
+                <div class="main-operating-court" id="panel-court">
+                    
+                    <div class="court-cell-box front-row-box" id="cell-box-pos4">
+                        <button class="btn-diagonal-swap" onclick="swapDiagonals('pos4', 'pos6')" title="大砲手前後排對角對調"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        <div class="cell-header-info"><span class="cell-pos-title">4號(左前)</span><span class="cell-player-name" id="name-pos4">--</span><span class="cell-player-role" id="role-pos4">大砲手</span></div>
+                        <div class="metric-action-row" id="metrics-pos4"></div>
+                    </div>
+
+                    <div class="court-cell-box front-row-box" id="cell-box-pos3">
+                        <button class="btn-diagonal-swap" onclick="swapMb3()" title="快攻手獨立手動切換"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        <div class="cell-header-info"><span class="cell-pos-title">3號(中前)</span><span class="cell-player-name" id="name-pos3">--</span><span class="cell-player-role" id="role-pos3">快攻手</span></div>
+                        <div class="metric-action-row" id="metrics-pos3"></div>
+                    </div>
+
+                    <div class="court-cell-box front-row-box" id="cell-box-pos2">
+                        <button class="btn-diagonal-swap" onclick="swapDiagonals('pos2', 'pos1')" title="舉球/副攻 前後排對角對調"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        <div class="cell-header-info"><span class="cell-pos-title">2號(右前)</span><span class="cell-player-name" id="name-pos2">--</span><span class="cell-player-role" id="role-pos2">舉球/副攻</span></div>
+                        <div class="metric-action-row" id="metrics-pos2"></div>
+                    </div>
+
+                    <div class="court-cell-box back-row-box" id="cell-box-pos5">
+                        <button class="btn-diagonal-swap" onclick="cyclePos5()" title="5號位四段式循環：快攻1/自由/快攻2/自由"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        <div class="cell-header-info"><span class="cell-pos-title">5號(左後)</span><span class="cell-player-name" id="name-pos5">--</span><span class="cell-player-role" id="role-pos5">自由球員</span></div>
+                        <div class="metric-action-row" id="metrics-pos5"></div>
+                    </div>
+
+                    <div class="court-cell-box back-row-box" id="cell-box-pos6">
+                        <div class="cell-header-info"><span class="cell-pos-title">6號(中後)</span><span class="cell-player-name" id="name-pos6">--</span><span class="cell-player-role" id="role-pos6">大砲手</span></div>
+                        <div class="metric-action-row" id="metrics-pos6"></div>
+                    </div>
+
+                    <div class="court-cell-box back-row-box" id="cell-box-pos1">
+                        <div class="cell-header-info"><span class="cell-pos-title">1號(右後)</span><span class="cell-player-name" id="name-pos1">--</span><span class="cell-player-role" id="role-pos1">舉球/副攻</span></div>
+                        <div class="metric-action-row" id="metrics-pos1"></div>
+                    </div>
+
+                </div>
+
+                <!-- [右側] 落點九宮格 -->
+                <div class="court-fall-zone-card" id="panel-fall">
+                    <h3><i class="fa-solid fa-map-location-dot"></i> 攔網失分落點九宮格</h3>
+                    <p>對手落地或失球時點擊次數調整</p>
+                    
+                    <div class="fall-grid-3x3">
+                        <div class="fall-cell" id="fall-cell-4"><div class="fall-cell-num">4 號</div><div class="fall-cell-count" id="fall-count-4">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(4, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(4, 1)">+</button></div></div>
+                        <div class="fall-cell" id="fall-cell-3"><div class="fall-cell-num">3 號</div><div class="fall-cell-count" id="fall-count-3">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(3, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(3, 1)">+</button></div></div>
+                        <div class="fall-cell" id="fall-cell-2"><div class="fall-cell-num">2 號</div><div class="fall-cell-count" id="fall-count-2">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(2, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(2, 1)">+</button></div></div>
+                        
+                        <div class="fall-cell" id="fall-cell-9"><div class="fall-cell-num">9 號</div><div class="fall-cell-count" id="fall-count-9">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(9, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(9, 1)">+</button></div></div>
+                        <div class="fall-cell" id="fall-cell-8"><div class="fall-cell-num">8 號</div><div class="fall-cell-count" id="fall-count-8">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(8, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(8, 1)">+</button></div></div>
+                        <div class="fall-cell" id="fall-cell-7"><div class="fall-cell-num">7 號</div><div class="fall-cell-count" id="fall-count-7">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(7, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(7, 1)">+</button></div></div>
+                        
+                        <div class="fall-cell" id="fall-cell-5"><div class="fall-cell-num">5 號</div><div class="fall-cell-count" id="fall-count-5">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(5, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(5, 1)">+</button></div></div>
+                        <div class="fall-cell" id="fall-cell-6"><div class="fall-cell-num">6 號</div><div class="fall-cell-count" id="fall-count-6">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(6, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(6, 1)">+</button></div></div>
+                        <div class="fall-cell" id="fall-cell-1"><div class="fall-cell-num">1 號</div><div class="fall-cell-count" id="fall-count-1">0</div><div class="fall-adjust-row"><button class="btn-fall-adj btn-fall-minus" onclick="adjustFallZone(1, -1)">-</button><button class="btn-fall-adj btn-fall-plus" onclick="adjustFallZone(1, 1)">+</button></div></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 下方調度區 -->
+            <div class="footer-dashboard" id="panel-bench">
+                <div class="bench-card">
+                    <h3><i class="fa-solid fa-user-gear"></i> 球員替換調度 (角色基準)</h3>
+                    
+                    <div class="sub-panel-box">
+                        <div class="sub-selects">
+                            <span style="font-weight: bold; font-size: 13px;">替補場上角色：</span>
+                            <select id="select-replace-role">
+                                <!-- JS 動態生成包含當前球員姓名的選單 -->
+                            </select>
+                            <span style="font-weight: bold; font-size: 13px;">更換新姓名：</span>
+                            <input type="text" id="input-sub-name" placeholder="新姓名" style="width: 120px;">
+                            <button class="btn" id="btn-execute-sub" style="padding: 6px 14px; font-size: 13px; background-color: #ea580c; border-radius: 6px; color:white; font-weight:bold;"><i class="fa-solid fa-right-left"></i> 執行更換</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 註冊 PWA Service Worker 支援離線與全螢幕啟動
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Registration failed:', err));
+            });
+        }
+
+        let playersDatabase = {};
+        let matchInfo = {};
+        let actionLedger = [];
+
+        let courtPositions = { pos1:'', pos2:'', pos3:'', pos4:'', pos5:'', pos6:'' };
+        let rolesMapping = { oh1: '', mb1: '', setter: '', opposite: '', oh2: '', mb2: '', libero: '' };
+        
+        let currentActiveMb3 = 'mb1';
+        let pos5CycleState = 0; 
+
+        let fallZoneCounts = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 };
+        let currentScores = { home: 0, away: 0 };
+        let miniPositions = [];
+        let miniRotationIndex = 1;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            let now = new Date();
+            let yyyy = now.getFullYear();
+            let mm = String(now.getMonth() + 1).padStart(2, '0');
+            let dd = String(now.getDate()).padStart(2, '0');
+            document.getElementById('match-date').value = `${yyyy}-${mm}-${dd}`;
+            
+            let hh = String(now.getHours()).padStart(2, '0');
+            let min = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('match-time').value = `${hh}:${min}`;
+
+            checkSavedGame();
+        });
+
+        // 檢查 LocalStorage 是否有歷史數據
+        function checkSavedGame() {
+            try {
+                let saved = localStorage.getItem('vball_current_match');
+                if (saved) {
+                    let parsed = JSON.parse(saved);
+                    if (parsed && parsed.matchInfo && parsed.matchInfo.opponent) {
+                        document.getElementById('restore-banner-box').classList.remove('hidden');
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function saveGameToStorage() {
+            try {
+                let data = {
+                    playersDatabase, matchInfo, actionLedger,
+                    courtPositions, rolesMapping, currentActiveMb3,
+                    pos5CycleState, fallZoneCounts, currentScores,
+                    miniPositions, miniRotationIndex
+                };
+                localStorage.setItem('vball_current_match', JSON.stringify(data));
+            } catch(e) {}
+        }
+
+        window.restoreSavedGame = function() {
+            try {
+                let saved = localStorage.getItem('vball_current_match');
+                if (!saved) return;
+                let data = JSON.parse(saved);
+                
+                playersDatabase = data.playersDatabase || {};
+                matchInfo = data.matchInfo || {};
+                actionLedger = data.actionLedger || [];
+                courtPositions = data.courtPositions || {};
+                rolesMapping = data.rolesMapping || {};
+                currentActiveMb3 = data.currentActiveMb3 || 'mb1';
+                pos5CycleState = data.pos5CycleState || 0;
+                fallZoneCounts = data.fallZoneCounts || {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
+                currentScores = data.currentScores || {home:0, away:0};
+                miniPositions = data.miniPositions || [];
+                miniRotationIndex = data.miniRotationIndex || 1;
+
+                document.getElementById('restore-banner-box').classList.add('hidden');
+                document.getElementById('setup-section').classList.add('hidden');
+                document.getElementById('operating-section').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.remove('hidden');
+
+                document.getElementById('score-home').innerText = currentScores.home;
+                document.getElementById('score-away').innerText = currentScores.away;
+                
+                for (let zone in fallZoneCounts) {
+                    let el = document.getElementById(`fall-count-${zone}`);
+                    if (el) el.innerText = fallZoneCounts[zone];
+                }
+
+                document.getElementById('match-info-banner-id').innerHTML = `
+                    <i class="fa-solid fa-file-invoice"></i> 
+                    <span>日期：<strong>${matchInfo.date || ''}</strong></span>
+                    <span>時間：<strong>${matchInfo.time || ''}</strong></span>
+                    <span>地點：<strong>${matchInfo.location || ''}</strong></span>
+                    <span>對手：<strong style="color:#2563eb">${matchInfo.opponent || ''}</strong></span>
+                    <span>場次：<strong>${matchInfo.round || ''}</strong></span>
+                `;
+
+                refreshUI();
+            } catch(e) {
+                alert("載入存檔失敗！");
+            }
+        };
+
+        window.clearSavedGame = function() {
+            localStorage.removeItem('vball_current_match');
+            document.getElementById('restore-banner-box').classList.add('hidden');
+        };
+
+        // 一鍵帶入示範資料（超便利測試功能）
+        document.getElementById('btn-fill-demo').addEventListener('click', () => {
+            document.getElementById('match-location').value = "新豐體育館";
+            document.getElementById('match-opponent').value = "熱血排球隊";
+            document.getElementById('match-round').value = "預賽第一場";
+
+            document.getElementById('setup-p4').value = "林大砲";
+            document.getElementById('setup-p3').value = "張快攻";
+            document.getElementById('setup-p2').value = "陳舉球";
+            document.getElementById('setup-p5').value = "王主攻";
+            document.getElementById('setup-p6').value = "黃副攻";
+            document.getElementById('setup-p1').value = "李快攻";
+            document.getElementById('setup-pL').value = "劉自由";
+
+            // 清除錯誤提示
+            document.querySelectorAll('.form-group').forEach(el => el.classList.remove('field-error'));
+        });
+
+        const setterRadios = document.querySelectorAll('input[name="setter-start"]');
+        function previewRoles() {
+            let selected = document.querySelector('input[name="setter-start"]:checked').value;
+            if (selected === 'pos1') {
+                document.getElementById('role-label-pos1').innerText = "舉球員";
+                document.getElementById('role-label-pos2').innerText = "大砲手";
+                document.getElementById('role-label-pos3').innerText = "快攻手";
+                document.getElementById('role-label-pos4').innerText = "副攻手";
+                document.getElementById('role-label-pos5').innerText = "大砲手";
+                document.getElementById('role-label-pos6').innerText = "快攻手";
+            } else {
+                document.getElementById('role-label-pos2').innerText = "舉球員";
+                document.getElementById('role-label-pos3').innerText = "大砲手";
+                document.getElementById('role-label-pos4').innerText = "快攻手";
+                document.getElementById('role-label-pos5').innerText = "副攻手";
+                document.getElementById('role-label-pos6').innerText = "大砲手";
+                document.getElementById('role-label-pos1').innerText = "快攻手";
+            }
+        }
+        setterRadios.forEach(r => r.addEventListener('change', previewRoles));
+        previewRoles();
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            // 清除舊錯誤樣式
+            document.querySelectorAll('.form-group').forEach(el => el.classList.remove('field-error'));
+
+            matchInfo.date = document.getElementById('match-date').value;
+            matchInfo.time = document.getElementById('match-time').value;
+            matchInfo.location = document.getElementById('match-location').value.trim();
+            matchInfo.round = document.getElementById('match-round').value.trim();
+            matchInfo.opponent = document.getElementById('match-opponent').value.trim();
+
+            let hasError = false;
+
+            if (!matchInfo.location) { document.getElementById('group-location').classList.add('field-error'); hasError = true; }
+            if (!matchInfo.opponent) { document.getElementById('group-opponent').classList.add('field-error'); hasError = true; }
+            if (!matchInfo.round) { document.getElementById('group-round').classList.add('field-error'); hasError = true; }
+
+            let p1 = document.getElementById('setup-p1').value.trim();
+            let p2 = document.getElementById('setup-p2').value.trim();
+            let p3 = document.getElementById('setup-p3').value.trim();
+            let p4 = document.getElementById('setup-p4').value.trim();
+            let p5 = document.getElementById('setup-p5').value.trim();
+            let p6 = document.getElementById('setup-p6').value.trim();
+            let pL = document.getElementById('setup-pL').value.trim();
+
+            if (!p1) { document.getElementById('group-p1').classList.add('field-error'); hasError = true; }
+            if (!p2) { document.getElementById('group-p2').classList.add('field-error'); hasError = true; }
+            if (!p3) { document.getElementById('group-p3').classList.add('field-error'); hasError = true; }
+            if (!p4) { document.getElementById('group-p4').classList.add('field-error'); hasError = true; }
+            if (!p5) { document.getElementById('group-p5').classList.add('field-error'); hasError = true; }
+            if (!p6) { document.getElementById('group-p6').classList.add('field-error'); hasError = true; }
+
+            if (hasError) {
+                alert("請將紅框標示的比賽基本資訊與先發名單填寫完整！（亦可點擊『快速帶入示範資料』進行測試）");
+                let firstErr = document.querySelector('.field-error');
+                if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            let selected = document.querySelector('input[name="setter-start"]:checked').value;
+            if (selected === 'pos1') {
+                rolesMapping.setter = p1;   rolesMapping.oh1 = p2;    rolesMapping.mb1 = p3;
+                rolesMapping.opposite = p4; rolesMapping.oh2 = p5;    rolesMapping.mb2 = p6;
+            } else {
+                rolesMapping.mb2 = p1;      rolesMapping.setter = p2; rolesMapping.oh1 = p3;
+                rolesMapping.mb1 = p4;      rolesMapping.opposite = p5; rolesMapping.oh2 = p6;
+            }
+            rolesMapping.libero = pL || "自由球員";
+
+            miniPositions = [p1, p2, p3, p4, p5, p6];
+            miniRotationIndex = 1;
+
+            for(let key in rolesMapping) {
+                if(rolesMapping[key]) initPlayerInDb(rolesMapping[key], key);
+            }
+
+            courtPositions.pos4 = rolesMapping.oh1;
+            courtPositions.pos3 = rolesMapping.mb1;
+            courtPositions.pos2 = rolesMapping.setter;
+            courtPositions.pos5 = rolesMapping.libero;
+            pos5CycleState = 0; 
+
+            courtPositions.pos6 = rolesMapping.oh2;
+            courtPositions.pos1 = rolesMapping.opposite;
+            currentActiveMb3 = 'mb1';
+
+            document.getElementById('match-info-banner-id').innerHTML = `
+                <i class="fa-solid fa-file-invoice"></i> 
+                <span>日期：<strong>${matchInfo.date}</strong></span>
+                <span>時間：<strong>${matchInfo.time}</strong></span>
+                <span>地點：<strong>${matchInfo.location}</strong></span>
+                <span>對手：<strong style="color:#2563eb">${matchInfo.opponent}</strong></span>
+                <span>場次：<strong>${matchInfo.round}</strong></span>
+            `;
+
+            document.getElementById('setup-section').classList.add('hidden');
+            document.getElementById('operating-section').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+
+            refreshUI();
+            saveGameToStorage();
+        });
+
+        document.getElementById('btn-reset-match').addEventListener('click', () => {
+            if (confirm("確定要放棄當前紀錄並重新開始新比賽嗎？")) {
+                clearSavedGame();
+                location.reload();
+            }
+        });
+
+        function initPlayerInDb(name, roleKey) {
+            let chName = { oh1:"大砲手", oh2:"大砲手", mb1:"快攻手", mb2:"快攻手", setter:"舉球員", opposite:"副攻手", libero:"自由球員" }[roleKey] || "球員";
+            if (!playersDatabase[name]) {
+                playersDatabase[name] = {
+                    name: name, role: chName,
+                    stats: {
+                        s_total: 0, s_good: 0, s_err: 0,  
+                        r_total: 0, r_err: 0,              
+                        at_total: 0, at_good: 0, at_err: 0, 
+                        b_total: 0, b_good: 0,            
+                        d_total: 0, d_err: 0,
+                        st_total: 0, st_good: 0, st_err: 0
+                    }
+                };
+            }
+        }
+
+        window.adjustScore = function(team, val) {
+            currentScores[team] = Math.max(0, currentScores[team] + val);
+            document.getElementById(`score-${team}`).innerText = currentScores[team];
+            logAction("Scoreboard", `${team}比數調整`, `${currentScores.home}:${currentScores.away}`);
+            saveGameToStorage();
+        };
+
+        window.adjustFallZone = function(zoneNum, val) {
+            fallZoneCounts[zoneNum] = Math.max(0, fallZoneCounts[zoneNum] + val);
+            document.getElementById(`fall-count-${zoneNum}`).innerText = fallZoneCounts[zoneNum];
+            logAction("FallZone", `攔網落地點-${zoneNum}號位`, val > 0 ? "計數+1" : "計數-1");
+            saveGameToStorage();
+        };
+
+        function logAction(playerOrType, actionName, valDetail) {
+            let now = new Date();
+            let timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            actionLedger.push({
+                timestamp: timeStr, 
+                actor: playerOrType, 
+                action: actionName, 
+                detail: valDetail, 
+                scoreState: `${currentScores.home}:${currentScores.away}`,
+                t_p1: courtPositions.pos1 || '--',
+                t_p2: courtPositions.pos2 || '--',
+                t_p3: courtPositions.pos3 || '--',
+                t_p4: courtPositions.pos4 || '--',
+                t_p5: courtPositions.pos5 || '--',
+                t_p6: courtPositions.pos6 || '--'
+            });
+        }
+
+        // 手機端分頁切換控制
+        window.switchMobileTab = function(tabName) {
+            document.querySelectorAll('.mobile-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+
+            if (window.innerWidth <= 900) {
+                document.getElementById('panel-court').style.display = (tabName === 'court') ? 'grid' : 'none';
+                document.getElementById('panel-fall').style.display = (tabName === 'fall') ? 'flex' : 'none';
+                document.getElementById('panel-bench').style.display = (tabName === 'bench') ? 'flex' : 'none';
+            }
+        };
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 900) {
+                document.getElementById('panel-court').style.display = 'grid';
+                document.getElementById('panel-fall').style.display = 'flex';
+                document.getElementById('panel-bench').style.display = 'flex';
+            } else {
+                let activeBtn = document.querySelector('.mobile-tab-btn.active');
+                if (activeBtn) {
+                    let tabName = activeBtn.id.replace('tab-btn-', '');
+                    switchMobileTab(tabName);
+                }
+            }
+        });
+
+        function refreshUI() {
+            for (let i = 1; i <= 6; i++) {
+                if (i === 5) continue; 
+                let posKey = 'pos' + i;
+                let pName = courtPositions[posKey];
+                document.getElementById(`name-${posKey}`).innerText = pName;
+                
+                let roleEl = document.getElementById(`role-${posKey}`);
+                let cellBox = document.getElementById(`cell-box-${posKey}`);
+                
+                cellBox.className = (i === 2 || i === 3 || i === 4) ? "court-cell-box front-row-box" : "court-cell-box back-row-box";
+                
+                if (posKey === 'pos4' || posKey === 'pos6') {
+                    roleEl.innerText = "大砲手";
+                    roleEl.className = "cell-player-role role-badge-oh";
+                }
+                if (posKey === 'pos3') {
+                    roleEl.innerText = "快攻手";
+                    roleEl.className = "cell-player-role role-badge-mb";
+                }
+                if (posKey === 'pos2' || posKey === 'pos1') {
+                    let isSetter = (pName === rolesMapping.setter);
+                    roleEl.innerText = isSetter ? "舉球員" : "副攻手";
+                    roleEl.className = isSetter ? "cell-player-role role-badge-setter" : "cell-player-role role-badge-opp";
+                }
+                
+                renderStandardMetricsUI(posKey, pName);
+            }
+
+            let p5Box = document.getElementById('cell-box-pos5');
+            let role5El = document.getElementById('role-pos5');
+            let p5Name = courtPositions.pos5;
+            document.getElementById('name-pos5').innerText = p5Name;
+
+            if (pos5CycleState === 0 || pos5CycleState === 2) {
+                p5Box.className = "court-cell-box back-row-box libero-active-style";
+                role5El.innerText = "自由球員";
+                role5El.className = "cell-player-role role-badge-libero";
+                renderLiberoMetricsUI('pos5', p5Name);
+            } else {
+                p5Box.className = "court-cell-box back-row-box";
+                role5El.innerText = "快攻手";
+                role5El.className = "cell-player-role role-badge-mb";
+                renderStandardMetricsUI('pos5', p5Name);
+            }
+
+            document.getElementById('mini-pos4').innerText = miniPositions[3] || '--';
+            document.getElementById('mini-pos3').innerText = miniPositions[2] || '--';
+            document.getElementById('mini-pos2').innerText = miniPositions[1] || '--';
+            document.getElementById('mini-pos5').innerText = miniPositions[4] || '--';
+            document.getElementById('mini-pos6').innerText = miniPositions[5] || '--';
+            document.getElementById('mini-pos1').innerText = miniPositions[0] || '--';
+
+            updateSubSelectMenu();
+        }
+
+        function updateSubSelectMenu() {
+            const selectEl = document.getElementById('select-replace-role');
+            if (!selectEl) return;
+            const currentVal = selectEl.value;
+            
+            selectEl.innerHTML = `
+                <option value="oh1">大砲手 (${rolesMapping.oh1 || '--'})</option>
+                <option value="oh2">大砲手 (${rolesMapping.oh2 || '--'})</option>
+                <option value="mb1">快攻手 (${rolesMapping.mb1 || '--'})</option>
+                <option value="mb2">快攻手 (${rolesMapping.mb2 || '--'})</option>
+                <option value="setter">舉球員 (${rolesMapping.setter || '--'})</option>
+                <option value="opposite">副攻手 (${rolesMapping.opposite || '--'})</option>
+                <option value="libero">自由球員 (${rolesMapping.libero || '--'})</option>
+            `;
+            if (currentVal) selectEl.value = currentVal;
+        }
+
+        function renderStandardMetricsUI(posId, pName) {
+            const container = document.getElementById(`metrics-${posId}`);
+            container.className = "metric-action-row"; 
+            container.innerHTML = "";
+            const pData = playersDatabase[pName];
+            if (!pData) return;
+
+            createGridRow(container, pName, "發球", [
+                { label: "總", f: "s_total", type: "total" },
+                { label: "好", f: "s_good", type: "good" },
+                { label: "失", f: "s_err", type: "err" }
+            ]);
+
+            createGridRow(container, pName, "接球", [
+                { label: "總", f: "r_total", type: "total" },
+                { placeholder: true }, 
+                { label: "誤", f: "r_err", type: "err" }
+            ]);
+
+            if (pName === rolesMapping.setter) {
+                createGridRow(container, pName, "舉球", [
+                    { label: "總", f: "st_total", type: "total" },
+                    { label: "好", f: "st_good", type: "good" },
+                    { label: "失", f: "st_err", type: "err" }
+                ]);
+            } else {
+                createGridRow(container, pName, "攻擊", [
+                    { label: "總", f: "at_total", type: "total" },
+                    { label: "得", f: "at_good", type: "good" },
+                    { label: "失", f: "at_err", type: "err" }
+                ]);
+            }
+
+            createGridRow(container, pName, "攔網", [
+                { label: "總", f: "b_total", type: "total" },
+                { label: "得", f: "b_good", type: "good" },
+                { placeholder: true }
+            ]);
+        }
+
+        function renderLiberoMetricsUI(posId, pName) {
+            const container = document.getElementById(`metrics-${posId}`);
+            container.className = "metric-action-row libero-row-gap-style"; 
+            container.innerHTML = "";
+            const pData = playersDatabase[pName];
+            if (!pData) return;
+
+            createGridRow(container, pName, "接(發)", [
+                { label: "總", f: "r_total", type: "total" },
+                { placeholder: true },
+                { label: "誤", f: "r_err", type: "err" }
+            ]);
+
+            createGridRow(container, pName, "防守", [
+                { label: "總", f: "d_total", type: "total" },
+                { placeholder: true },
+                { label: "誤", f: "d_err", type: "err" }
+            ]);
+        }
+
+        function createGridRow(parentContainer, playerName, rowTitle, itemsConfig) {
+            let block = document.createElement('div');
+            block.className = "metric-block";
+            block.innerHTML = `<span class="metric-title">${rowTitle}</span>`;
+
+            let btnRow = document.createElement('div');
+            btnRow.className = "counter-unit-row";
+
+            itemsConfig.forEach(it => {
+                if (it.placeholder) {
+                    let ph = document.createElement('div');
+                    ph.className = "grid-placeholder-cell";
+                    btnRow.appendChild(ph);
+                } else {
+                    let btnClass = "btn-plus-total";
+                    if (it.type === "good") btnClass = "btn-plus";
+                    if (it.type === "err") btnClass = "btn-plus-err";
+                    
+                    let grp = document.createElement('div');
+                    grp.className = "ctrl-btn-group-inline";
+                    let currentVal = (playersDatabase[playerName] && playersDatabase[playerName].stats[it.f]) || 0;
+                    
+                    let safeName = playerName.replace(/'/g, "\\'");
+                    
+                    grp.innerHTML = `
+                        <span class="counter-sub-label">${it.label}</span>
+                        <span class="counter-val-inline">${currentVal}</span>
+                        <button class="btn-mini-inline btn-minus" onclick="doAction('${safeName}', '${it.f}', -1)">-</button>
+                        <button class="btn-mini-inline ${btnClass}" onclick="doAction('${safeName}', '${it.f}', 1)">+</button>
+                    `;
+                    btnRow.appendChild(grp);
+                }
+            });
+            block.appendChild(btnRow);
+            parentContainer.appendChild(block);
+        }
+
+        window.doAction = function(pName, field, val) {
+            if (playersDatabase[pName]) {
+                playersDatabase[pName].stats[field] = Math.max(0, playersDatabase[pName].stats[field] + val);
+                logAction(pName, `${field}變更`, val > 0 ? "+1" : "-1");
+                refreshUI();
+                saveGameToStorage();
+            }
+        };
+
+        window.swapDiagonals = function(posA, posB) {
+            let temp = courtPositions[posA];
+            courtPositions[posA] = courtPositions[posB];
+            courtPositions[posB] = temp;
+            logAction("System", `對角互換: ${posA} ↔ ${posB}`, "手動調整");
+            refreshUI();
+            saveGameToStorage();
+        };
+
+        window.swapMb3 = function() {
+            if (currentActiveMb3 === 'mb1') {
+                courtPositions.pos3 = rolesMapping.mb2;
+                currentActiveMb3 = 'mb2';
+            } else {
+                courtPositions.pos3 = rolesMapping.mb1;
+                currentActiveMb3 = 'mb1';
+            }
+            logAction("System", `3號位獨立更換: 當前3號為${currentActiveMb3}`, "手動調整");
+            refreshUI();
+            saveGameToStorage();
+        };
+
+        window.cyclePos5 = function() {
+            pos5CycleState = (pos5CycleState + 1) % 4;
+            if (pos5CycleState === 0 || pos5CycleState === 2) {
+                courtPositions.pos5 = rolesMapping.libero;
+            } else if (pos5CycleState === 1) {
+                courtPositions.pos5 = rolesMapping.mb1;
+            } else if (pos5CycleState === 3) {
+                courtPositions.pos5 = rolesMapping.mb2;
+            }
+            logAction("System", `5號位循環切換: 狀態[${pos5CycleState}] 姓名:${courtPositions.pos5}`, "手動調整");
+            refreshUI();
+            saveGameToStorage();
+        };
+
+        document.getElementById('btn-rotate-mini').addEventListener('click', () => {
+            let temp = miniPositions[0];
+            miniPositions[0] = miniPositions[1];
+            miniPositions[1] = miniPositions[2];
+            miniPositions[2] = miniPositions[3];
+            miniPositions[3] = miniPositions[4];
+            miniPositions[4] = miniPositions[5];
+            miniPositions[5] = temp;
+            miniRotationIndex = miniRotationIndex === 6 ? 1 : miniRotationIndex + 1;
+            refreshUI();
+            saveGameToStorage();
+        });
+
+        document.getElementById('btn-execute-sub').addEventListener('click', () => {
+            let targetRole = document.getElementById('select-replace-role').value;
+            let newName = document.getElementById('input-sub-name').value.trim();
+            if(!newName) { alert("請輸入新姓名！"); return; }
+
+            let oldName = rolesMapping[targetRole];
+            rolesMapping[targetRole] = newName;
+            
+            initPlayerInDb(newName, targetRole);
+
+            for (let key in courtPositions) {
+                if (courtPositions[key] === oldName) {
+                    courtPositions[key] = newName;
+                }
+            }
+
+            logAction("System", `角色更換: ${targetRole}(原${oldName}) ↔ ${newName}`, "替補上場");
+            alert(`更換成功！【${document.getElementById('select-replace-role').selectedOptions[0].text.split(' ')[0]}】已換成：${newName}`);
+            document.getElementById('input-sub-name').value = "";
+            refreshUI();
+            saveGameToStorage();
+        });
+
+        document.getElementById('btn-export').addEventListener('click', () => {
+            let csvContent = "\uFEFF";
+            csvContent += `比賽日期,${matchInfo.date},比賽時間,${matchInfo.time},比賽地點,${matchInfo.location},對手名稱,${matchInfo.opponent},賽事場次,${matchInfo.round},最終比數,${currentScores.home}:${currentScores.away}\n\n`;
+            
+            csvContent += "=== 球員個人總計攻守數據 ===\n";
+            csvContent += "球員姓名,綁定角色,發球-總次,發球-好球,發球-失分,接球-總次,接球-失誤,攻擊-總次,攻擊-得分,攻擊-失分,攔網-總次,攔網-得分,防守防守-總次,防守防守-失誤,舉球-總次,舉球-到位,舉球-失誤\n";
+            for (let name in playersDatabase) {
+                let p = playersDatabase[name];
+                let s = p.stats;
+                csvContent += `${p.name},${p.role},${s.s_total},${s.s_good},${s.s_err},${s.r_total},${s.r_err},${s.at_total},${s.at_good},${s.at_err},${s.b_total},${s.b_good},${s.d_total},${s.d_err},${s.st_total},${s.st_good},${s.st_err}\n`;
+            }
+            csvContent += "\n";
+
+            csvContent += "=== 攔網失分落點九宮格統計 ===\n";
+            csvContent += "落點位置,1號位(right-back),2號位(right-front),3號位(middle-front),4號位(left-front),5號位(left-back),6號位(middle-back),7號位(right-middle),8號位(center),9號位(left-middle)\n";
+            csvContent += `累計失球次數,${fallZoneCounts[1]},${fallZoneCounts[2]},${fallZoneCounts[3]},${fallZoneCounts[4]},${fallZoneCounts[5]},${fallZoneCounts[6]},${fallZoneCounts[7]},${fallZoneCounts[8]},${fallZoneCounts[9]}\n\n`;
+
+            csvContent += "=== 賽事即時行為時間軸 ===\n";
+            csvContent += "發生時間,執行球員/模組,動作名稱,數值變動,當下得分比數,當下1號位,當下2號位,當下3號位,當下4號位,當下5號位,當下6號位\n";
+            actionLedger.forEach(item => {
+                csvContent += `${item.timestamp},${item.actor},${item.action},${item.detail},${item.scoreState},${item.t_p1},${item.t_p2},${item.t_p3},${item.t_p4},${item.t_p5},${item.t_p6}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", `排球紀錄表_${matchInfo.opponent}_${matchInfo.round}_v2.4.1.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>
