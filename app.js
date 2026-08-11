@@ -822,5 +822,350 @@ document.body.addEventListener('click', (e) => {
             showToast("已放棄舊紀錄", "info");
             break;
         }
+        case 'cloud-save': {
+            saveMatchToCloud();
+            break;
+        }
+        case 'cloud-list': {
+            openCloudHistoryModal();
+            break;
+        }
+        case 'open-cloud-config': {
+            openCloudConfigModal();
+            break;
+        }
+        case 'google-login': {
+            signInWithGoogle();
+            break;
+        }
+        case 'cloud-logout': {
+            signOutUser();
+            break;
+        }
+        case 'load-cloud-match': {
+            const docId = targetBtn.dataset.docid;
+            if (docId) loadCloudMatch(docId);
+            break;
+        }
+        case 'delete-cloud-match': {
+            const docId = targetBtn.dataset.docid;
+            if (docId) deleteCloudMatch(docId);
+            break;
+        }
     }
 });
+
+// ================= Firebase 雲端儲存與身份驗證模組 =================
+let customFirebaseConfig = null;
+try {
+    let cachedConfig = localStorage.getItem('vball_firebase_config');
+    if (cachedConfig) customFirebaseConfig = JSON.parse(cachedConfig);
+} catch (e) {}
+
+let db = null;
+let auth = null;
+let currentUser = null;
+let isFirebaseInitialized = false;
+
+function updateCloudStatusUI(status, text) {
+    const badge = document.getElementById('cloud-status-badge');
+    const textEl = document.getElementById('cloud-user-text');
+    if (!badge || !textEl) return;
+
+    badge.className = `cloud-status-badge status-${status}`;
+    textEl.innerHTML = `<i class="fa-solid fa-cloud"></i> ${text}`;
+}
+
+function initFirebase() {
+    if (!window.firebase) {
+        updateCloudStatusUI('unconfigured', 'SDK 載入失敗');
+        return false;
+    }
+
+    const config = customFirebaseConfig;
+    if (!config || !config.apiKey || !config.projectId) {
+        updateCloudStatusUI('unconfigured', '設定 Firebase 金鑰');
+        return false;
+    }
+
+    try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(config);
+        }
+        db = firebase.firestore();
+        auth = firebase.auth();
+        isFirebaseInitialized = true;
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                if (user.isAnonymous) {
+                    updateCloudStatusUI('anon', `匿名備份中 (${user.uid.substring(0, 5)})`);
+                } else {
+                    updateCloudStatusUI('connected', user.displayName || user.email || `雲端已連線`);
+                }
+            } else {
+                currentUser = null;
+                // 自動嘗試匿名登入
+                auth.signInAnonymously().catch(err => {
+                    console.warn("Firebase Anonymous Auth failed:", err);
+                    updateCloudStatusUI('unconfigured', '驗證失敗');
+                });
+            }
+        });
+        return true;
+    } catch (e) {
+        console.error("Firebase init error:", e);
+        updateCloudStatusUI('unconfigured', '配置錯誤');
+        return false;
+    }
+}
+
+// 頁面載入後自動嘗試初始化 Firebase
+window.addEventListener('DOMContentLoaded', () => {
+    initFirebase();
+});
+
+// 彈出 Firebase Config 設定彈窗
+function openCloudConfigModal() {
+    const existing = document.getElementById('cloud-config-modal');
+    if (existing) existing.remove();
+
+    const currentConfig = customFirebaseConfig || { apiKey: '', authDomain: '', projectId: '', storageBucket: '', messagingSenderId: '', appId: '' };
+
+    const overlay = document.createElement('div');
+    overlay.id = 'cloud-config-modal';
+    overlay.className = 'modal-overlay';
+
+    overlay.innerHTML = `
+        <div class="modal-box" style="max-width: 480px;">
+            <h3><i class="fa-solid fa-cloud" style="color:#0d9488"></i> Firebase 雲端連線設定</h3>
+            <p style="font-size:13px; color:#64748b;">填入免費的 Firebase 專案金鑰即可啟用雲端自動備份與跨裝置同步。</p>
+            
+            <div class="cloud-config-form">
+                <div><label style="font-size:11px; font-weight:bold; color:#475569;">apiKey</label><input type="text" id="cfg-apiKey" value="${currentConfig.apiKey || ''}" placeholder="AIzaSy..."></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#475569;">projectId</label><input type="text" id="cfg-projectId" value="${currentConfig.projectId || ''}" placeholder="my-vball-app"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#475569;">authDomain (可選)</label><input type="text" id="cfg-authDomain" value="${currentConfig.authDomain || ''}" placeholder="my-vball-app.firebaseapp.com"></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #e2e8f0; padding-top:10px;">
+                ${currentUser && !currentUser.isAnonymous ? `<button class="btn" data-action="cloud-logout" style="background:#f1f5f9; color:#e11d48; font-size:12px; padding:4px 10px;">登出账号</button>` : `<button class="btn" data-action="google-login" style="background:#4285f4; color:white; font-size:12px; padding:6px 12px;"><i class="fa-brands fa-google"></i> Google 登入</button>`}
+                <div style="display:flex; gap:6px;">
+                    <button class="btn" id="btn-cancel-cfg" style="background:#e2e8f0; color:#334155; padding:6px 12px; font-size:13px;">取消</button>
+                    <button class="btn" id="btn-save-cfg" style="background:#0d9488; color:white; padding:6px 14px; font-size:13px;">儲存並連線</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btn-cancel-cfg').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#btn-save-cfg').addEventListener('click', () => {
+        const apiKey = document.getElementById('cfg-apiKey').value.trim();
+        const projectId = document.getElementById('cfg-projectId').value.trim();
+        const authDomain = document.getElementById('cfg-authDomain').value.trim() || `${projectId}.firebaseapp.com`;
+
+        if (!apiKey || !projectId) {
+            showToast("請填寫 apiKey 與 projectId！", "warning");
+            return;
+        }
+
+        customFirebaseConfig = { apiKey, projectId, authDomain };
+        localStorage.setItem('vball_firebase_config', JSON.stringify(customFirebaseConfig));
+        overlay.remove();
+
+        if (initFirebase()) {
+            showToast("Firebase 配置儲存成功，正在連線...", "success");
+        }
+    });
+}
+
+function signInWithGoogle() {
+    if (!isFirebaseInitialized) {
+        showToast("請先設定 Firebase apiKey 與 projectId！", "warning");
+        return;
+    }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then(() => {
+        showToast("Google 帳號連線成功！", "success");
+        const modal = document.getElementById('cloud-config-modal');
+        if (modal) modal.remove();
+    }).catch(err => {
+        showToast("Google 登入失敗：" + err.message, "error");
+    });
+}
+
+function signOutUser() {
+    if (auth) {
+        auth.signOut().then(() => {
+            showToast("已登出帳號", "info");
+            const modal = document.getElementById('cloud-config-modal');
+            if (modal) modal.remove();
+        });
+    }
+}
+
+// 雲端儲存寫入 (Firestore Save)
+async function saveMatchToCloud() {
+    if (!isFirebaseInitialized || !currentUser) {
+        showToast("請點擊『雲端設定』完成 Firebase 配置！", "warning");
+        openCloudConfigModal();
+        return;
+    }
+
+    try {
+        showToast("正在上傳至雲端...", "info");
+        const docId = state.matchInfo.opponent ? `${state.matchInfo.date}_${state.matchInfo.opponent}_${state.matchInfo.round}`.replace(/[\/\s#?]/g, '_') : `match_${Date.now()}`;
+        
+        const payload = {
+            matchId: docId,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            opponent: state.matchInfo.opponent || '未知對手',
+            round: state.matchInfo.round || '賽事',
+            date: state.matchInfo.date || '',
+            score: `${state.currentScores.home}:${state.currentScores.away}`,
+            uid: currentUser.uid,
+            stateData: JSON.stringify(state)
+        };
+
+        await db.collection('users').doc(currentUser.uid).collection('matches').doc(docId).set(payload, { merge: true });
+        showToast("☁️ 比賽紀錄已成功備份至雲端 Firestore！", "success");
+    } catch (e) {
+        console.error("Cloud save failed:", e);
+        showToast("雲端備份失敗：" + e.message, "error");
+    }
+}
+
+// 開啟雲端歷史紀錄 Modal (Firestore List)
+async function openCloudHistoryModal() {
+    if (!isFirebaseInitialized || !currentUser) {
+        showToast("請點擊『雲端設定』完成 Firebase 配置！", "warning");
+        openCloudConfigModal();
+        return;
+    }
+
+    showToast("正在讀取雲端紀錄列表...", "info");
+
+    try {
+        const snapshot = await db.collection('users').doc(currentUser.uid).collection('matches').get();
+        let matches = [];
+        snapshot.forEach(doc => {
+            matches.push({ docId: doc.id, ...doc.data() });
+        });
+
+        const existing = document.getElementById('cloud-history-modal');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'cloud-history-modal';
+        overlay.className = 'modal-overlay';
+
+        let listHtml = '';
+        if (matches.length === 0) {
+            listHtml = `<div style="text-align:center; padding:30px 10px; color:#64748b; font-weight:bold;">雲端尚無備份比賽紀錄</div>`;
+        } else {
+            matches.forEach(m => {
+                let dateStr = m.date || '無日期';
+                listHtml += `
+                    <div class="cloud-item-card">
+                        <div class="cloud-item-info">
+                            <div class="cloud-item-title">對手：${m.opponent} (${m.round})</div>
+                            <div class="cloud-item-sub">日期：${dateStr} ｜ 當前比分：<strong style="color:#2563eb">${m.score || '0:0'}</strong></div>
+                        </div>
+                        <div class="cloud-item-actions">
+                            <button class="btn" data-action="load-cloud-match" data-docid="${m.docId}" style="background:#0284c7; color:white; padding:4px 10px; font-size:12px;">載入</button>
+                            <button class="btn" data-action="delete-cloud-match" data-docid="${m.docId}" style="background:#e2e8f0; color:#ef4444; padding:4px 8px; font-size:12px;"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        overlay.innerHTML = `
+            <div class="modal-box" style="max-width: 520px;">
+                <h3><i class="fa-solid fa-folder-open" style="color:#4f46e5"></i> 雲端比賽歷史紀錄</h3>
+                <div class="cloud-history-list">${listHtml}</div>
+                <div class="modal-actions">
+                    <button class="btn" id="btn-close-cloud-history" style="background:#cbd5e1; color:#334155; padding:6px 14px; font-size:13px;">關閉</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('#btn-close-cloud-history').addEventListener('click', () => overlay.remove());
+
+    } catch (e) {
+        showToast("讀取紀錄失敗：" + e.message, "error");
+    }
+}
+
+// 從 Firestore 載入特定紀錄
+async function loadCloudMatch(docId) {
+    if (!db || !currentUser) return;
+    try {
+        showToast("正在下載雲端比賽紀錄...", "info");
+        const doc = await db.collection('users').doc(currentUser.uid).collection('matches').doc(docId).get();
+        if (!doc.exists) {
+            showToast("找不到該筆雲端紀錄", "error");
+            return;
+        }
+
+        const data = doc.data();
+        if (data && data.stateData) {
+            const parsedState = JSON.parse(data.stateData);
+            Object.assign(state, parsedState);
+
+            const modal = document.getElementById('cloud-history-modal');
+            if (modal) modal.remove();
+
+            document.getElementById('setup-section').classList.add('hidden');
+            document.getElementById('operating-section').classList.remove('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+
+            document.getElementById('score-home').innerText = state.currentScores.home;
+            document.getElementById('score-away').innerText = state.currentScores.away;
+
+            for (let zone in state.fallZoneCounts) {
+                let el = document.getElementById(`fall-count-${zone}`);
+                if (el) el.innerText = state.fallZoneCounts[zone];
+            }
+
+            document.getElementById('match-info-banner-id').innerHTML = `
+                <i class="fa-solid fa-file-invoice"></i> 
+                <span>日期：<strong>${state.matchInfo.date || ''}</strong></span>
+                <span>時間：<strong>${state.matchInfo.time || ''}</strong></span>
+                <span>地點：<strong>${state.matchInfo.location || ''}</strong></span>
+                <span>對手：<strong style="color:#2563eb">${state.matchInfo.opponent || ''}</strong></span>
+                <span>場次：<strong>${state.matchInfo.round || ''}</strong></span>
+            `;
+
+            refreshUI();
+            saveGameToStorage();
+            showToast(`☁️ 成功載入雲端紀錄：${state.matchInfo.opponent}`, "success");
+        }
+    } catch (e) {
+        showToast("載入雲端數據失敗：" + e.message, "error");
+    }
+}
+
+// 刪除 Firestore 紀錄
+async function deleteCloudMatch(docId) {
+    if (!db || !currentUser) return;
+    showConfirmModal({
+        title: '刪除雲端紀錄？',
+        message: '確定要永久刪除此筆雲端比賽紀錄嗎？',
+        confirmText: '確定刪除',
+        cancelText: '取消',
+        onConfirm: async () => {
+            try {
+                await db.collection('users').doc(currentUser.uid).collection('matches').doc(docId).delete();
+                showToast("雲端紀錄已刪除", "info");
+                openCloudHistoryModal(); // 重新整理清單
+            } catch (e) {
+                showToast("刪除失敗：" + e.message, "error");
+            }
+        }
+    });
+}
+

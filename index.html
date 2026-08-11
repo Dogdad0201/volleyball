@@ -16,6 +16,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    <!-- Firebase SDK (v10 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <!-- External CSS -->
     <link rel="stylesheet" href="style.css">
     
@@ -40,6 +45,11 @@
                 <span><i class="fa-solid fa-file-contract"></i> 賽前設定中</span>
             </div>
             <div id="action-buttons" class="header-actions hidden">
+                <div id="cloud-status-badge" class="cloud-status-badge status-unconfigured" data-action="open-cloud-config" title="點擊設定或查看 Firebase 雲端金鑰">
+                    <i class="fa-solid fa-cloud"></i> <span id="cloud-user-text">雲端設定</span>
+                </div>
+                <button class="btn" id="btn-cloud-save" data-action="cloud-save" style="background-color: #0d9488; color: white; padding: 8px 12px; font-size: 13px;"><i class="fa-solid fa-cloud-arrow-up"></i> 雲端備份</button>
+                <button class="btn" id="btn-cloud-list" data-action="cloud-list" style="background-color: #4f46e5; color: white; padding: 8px 12px; font-size: 13px;"><i class="fa-solid fa-folder-open"></i> 雲端紀錄</button>
                 <button class="btn" id="btn-export" data-action="export-csv" style="background-color: #0284c7; color: white; padding: 8px 14px; font-size: 13px;"><i class="fa-solid fa-file-excel"></i> 匯出 (CSV)</button>
                 <button class="btn" id="btn-reset-match" data-action="reset-match" style="background-color: #e11d48; color: white; padding: 8px 12px; font-size: 13px;"><i class="fa-solid fa-power-off"></i> 新比賽</button>
             </div>
