@@ -1,7 +1,9 @@
-const CACHE_NAME = 'vball-tracker-v2.4.1';
+const CACHE_NAME = 'vball-tracker-v2.5.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './style.css',
+  './app.js',
   './manifest.json',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'

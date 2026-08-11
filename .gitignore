@@ -1,0 +1,8 @@
+# 舊版備份檔與壓縮包（無需推上 GitHub）
+*.zip
+*.txt
+*2.4.1*
+
+# OS 暫存檔
+.DS_Store
+Thumbs.db
