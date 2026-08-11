@@ -227,32 +227,42 @@ function adjustFallZone(zoneNum, val) {
     saveGameToStorageDebounced();
 }
 
-// ================= 行動端分頁切換 =================
+// ================= 行動端與平板分頁切換 (900px 統一斷點) =================
+const MOBILE_BREAKPOINT_QUERY = '(max-width: 900px)';
+const mobileMediaMatcher = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
+
 function switchMobileTab(tabName) {
     document.querySelectorAll('.mobile-tab-btn').forEach(btn => btn.classList.remove('active'));
     let activeBtn = document.getElementById(`tab-btn-${tabName}`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    if (window.innerWidth <= 900) {
+    if (mobileMediaMatcher.matches) {
         document.getElementById('panel-court').style.display = (tabName === 'court') ? 'grid' : 'none';
         document.getElementById('panel-fall').style.display = (tabName === 'fall') ? 'flex' : 'none';
         document.getElementById('panel-bench').style.display = (tabName === 'bench') ? 'flex' : 'none';
+    } else {
+        // 電腦版清除 JS 設定的行內 display，還原 CSS 標準佈局
+        document.getElementById('panel-court').style.display = '';
+        document.getElementById('panel-fall').style.display = '';
+        document.getElementById('panel-bench').style.display = '';
     }
 }
 
-window.addEventListener('resize', () => {
-    if (window.innerWidth > 900) {
-        document.getElementById('panel-court').style.display = 'grid';
-        document.getElementById('panel-fall').style.display = 'flex';
-        document.getElementById('panel-bench').style.display = 'flex';
+function handleBreakpointChange(e) {
+    if (!e.matches) {
+        // > 900px 桌機版：清除行內 display，顯示所有面板
+        document.getElementById('panel-court').style.display = '';
+        document.getElementById('panel-fall').style.display = '';
+        document.getElementById('panel-bench').style.display = '';
     } else {
+        // <= 900px 行動版：啟動分頁頁籤
         let activeBtn = document.querySelector('.mobile-tab-btn.active');
-        if (activeBtn) {
-            let tabName = activeBtn.id.replace('tab-btn-', '');
-            switchMobileTab(tabName);
-        }
+        let tabName = activeBtn ? activeBtn.id.replace('tab-btn-', '') : 'court';
+        switchMobileTab(tabName);
     }
-});
+}
+
+mobileMediaMatcher.addEventListener('change', handleBreakpointChange);
 
 // ================= UI 渲染邏輯 =================
 function refreshUI() {
